@@ -46,6 +46,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 class BleOperationsActivity : AppCompatActivity() {
 
@@ -234,7 +236,43 @@ class BleOperationsActivity : AppCompatActivity() {
             }
 
             onCharacteristicChanged = { _, characteristic, value ->
-                log("Value changed on ${characteristic.uuid}: ${value.toHexString()}")
+                val myuuid = UUID(15269512513, -7112272406806074087)
+                if(characteristic.uuid.compareTo(myuuid)==0) {
+                    val shortArray = ShortArray(value.size / 2)
+                    ByteBuffer.wrap(value).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()[shortArray]
+                    val intArray = IntArray(value.size / 4)
+                    ByteBuffer.wrap(value).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer()[intArray]
+
+                    val id0 = shortArray[0]
+                    val id1 = shortArray[1]
+                    val timestamp = intArray[1]
+                    log("3000gt MSG:")
+                    log("  Id0:  ${id0.toString()}")
+                    log("  Id1:  ${id1.toString()}")
+                    log("  Time (ms):  ${timestamp.toString()}")
+
+                    when(id0.toInt()) {
+                        0 -> {
+                            val loopCnt = intArray[2]
+                            val loopPeriod = intArray[3]
+                            val worstLoopPeriod = intArray[4]
+                            //val nothing = intArray[5]
+                            val speed = intArray[6]
+                            val rpm = intArray[7]
+                            log("  Type: Sys")
+                            log("    loopCnt ${loopCnt.toString()}")
+                            log("    loopPeriod ${loopPeriod.toString()}")
+                            log("    worstLoopPeriod ${worstLoopPeriod.toString()}")
+                            log("    speed ${speed.toString()}")
+                            log("    rpm ${rpm.toString()}")
+                        }
+                        1 -> log("  Type: ECU")
+                        else -> log("Unknown Sender")
+                    }
+                }
+                else {
+                    log("Value changed on ${characteristic.uuid}: ${value.toHexString()}")
+                }
             }
 
             onNotificationsEnabled = { _, characteristic ->
